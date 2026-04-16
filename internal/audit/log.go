@@ -59,3 +59,13 @@ func (l *Logger) LogSync(path string, count int, err error) error {
 	}
 	return l.Log(e)
 }
+
+// LogAccess is a convenience wrapper for logging a secret access event.
+// action should describe the operation (e.g. "read", "write", "delete").
+func (l *Logger) LogAccess(action, key string, err error) error {
+	e := Entry{Event: "access", Detail: fmt.Sprintf("%s %s", action, key)}
+	if err != nil {
+		e.Error = err.Error()
+	}
+	return l.Log(e)
+}
