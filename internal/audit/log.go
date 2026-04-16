@@ -8,61 +8,54 @@ import (
 	"time"
 )
 
-// Entry represents a single audit log event.
+// Entry represents a single audit log record.
 type Entry struct {
-	Timestamp time.Time `json:"timestamp"`
-	Event     string    `json:"event"`
-	Path      string    `json:"path,omitempty"`
-	Keys      []string  `json:"keys,omitempty"`
-	Error     string    `json:"error,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
+	Event     string `json:"event"`
+	Detail    string `json:"detail,omitempty"`
+	Error     string `json:"error,omitempty"`
 }
 
-// Logger writes structured audit entries to a writer.
+// Logger writes structured audit entries.
 type Logger struct {
-	out io.Writer
+	w io.Writer
 }
 
-// New creates a Logger writing to the given path.
-// Pass an empty path to write to stdout.
-func New(logPath string) (*Logger, error) {
-	if logPath == "" {
-		return &Logger{out: os.Stdout}, nil
+// New creates a Logger that appends to the given file path.
+func New(path string) (*Logger, error) {
+	if path == "" {
+		return &Logger{w: io.Discard}, nil
 	}
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		return nil, fmt.Errorf("audit: open log file: %w", err)
+		return nil, fmt.Errorf("open audit log: %w", err)
 	}
-	return &Logger{out: f}, nil
+	return &Logger{w: f}, nil
 }
 
-// NewWithWriter creates a Logger writing to w (useful for testing).
+// NewWithWriter creates a Logger writing to the provided writer (useful for tests).
 func NewWithWriter(w io.Writer) *Logger {
-	return &Logger{out: w}
+	return &Logger{w: w}
 }
 
-// Log writes an audit entry.
+// Log writes a single Entry, stamping the timestamp if absent.
 func (l *Logger) Log(e Entry) error {
-	if e.Timestamp.IsZero() {
-		e.Timestamp = time.Now().UTC()
+	if e.Timestamp == "" {
+		e.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	}
 	data, err := json.Marshal(e)
 	if err != nil {
-		return fmt.Errorf("audit: marshal entry: %w", err)
+		return err
 	}
-	_, err = fmt.Fprintln(l.out, string(data))
+	_, err = fmt.Fprintf(l.w, "%s\n", data)
 	return err
 }
 
-// LogSync is a convenience method for recording a sync event.
-func (l *Logger) LogSync(vaultPath string, keys []string, syncErr error) error {
-	e := Entry{
-		Event: "sync",
-		Path:  vaultPath,
-		Keys:  keys,
-	}
-	if syncErr != nil {
-		e.Event = "sync_error"
-		e.Error = syncErr.Error()
+// LogSync is a convenience wrapper for logging a sync operation result.
+func (l *Logger) LogSync(path string, count int, err error) error {
+	e := Entry{Event: "sync", Detail: fmt.Sprintf("%s (%d keys)", path, count)}
+	if err != nil {
+		e.Error = err.Error()
 	}
 	return l.Log(e)
 }
