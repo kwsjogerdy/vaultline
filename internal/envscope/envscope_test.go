@@ -82,3 +82,16 @@ func TestList_ReturnsScopeNames(t *testing.T) {
 		t.Fatalf("expected 2 scopes, got %d", len(names))
 	}
 }
+
+func TestApply_EmptySecrets_ReturnsEmpty(t *testing.T) {
+	m := envscope.New([]envscope.Scope{
+		{Name: "dev", Prefixes: []string{"DB_"}},
+	})
+	got, err := m.Apply("dev", map[string]string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected 0 keys, got %d", len(got))
+	}
+}
