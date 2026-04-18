@@ -1,0 +1,14 @@
+{
+  "pins": {
+    "secret/app/prod": {
+      "path": "secret/app/prod",
+      "version": 4,
+      "pinned_at": "2024-06-01T12:00:00Z"
+    },
+    "secret/db/prod": {
+      "path": "secret/db/prod",
+      "version": 2,
+      "pinned_at": "2024-06-01T12:05:00Z"
+    }
+  }
+}
