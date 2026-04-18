@@ -58,6 +58,14 @@ func TestRenderBytes_RequiredFunc_Present(t *testing.T) {
 	}
 }
 
+func TestRenderBytes_InvalidTemplate(t *testing.T) {
+	tmpl := []byte(`VALUE={{ .Unclosed`)
+	_, err := RenderBytes(tmpl, map[string]string{})
+	if err == nil {
+		t.Fatal("expected error for invalid template syntax")
+	}
+}
+
 func TestRender_FromFile(t *testing.T) {
 	path := writeTemp(t, `APP_ENV={{ index . "APP_ENV" }}`)
 	r := New(path)
