@@ -39,6 +39,11 @@ func (w *Writer) WriteAll(secrets map[string]string) error {
 	return nil
 }
 
+// Targets returns the list of targets configured on the Writer.
+func (w *Writer) Targets() []Target {
+	return w.targets
+}
+
 func filter(secrets map[string]string, keys []string) map[string]string {
 	if len(keys) == 0 {
 		return secrets
