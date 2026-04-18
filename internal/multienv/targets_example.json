@@ -1,0 +1,14 @@
+[
+  {
+    "path": ".env",
+    "keys": []
+  },
+  {
+    "path": "services/api/.env",
+    "keys": ["API_KEY", "API_SECRET"]
+  },
+  {
+    "path": "services/worker/.env",
+    "keys": ["QUEUE_URL", "WORKER_TOKEN"]
+  }
+]
