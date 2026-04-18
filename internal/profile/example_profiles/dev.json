@@ -1,0 +1,7 @@
+{
+  "name": "dev",
+  "vault_path": "secret/data/dev",
+  "output_file": ".env.dev",
+  "keys": [],
+  "exclude": ["DEBUG", "LOG_LEVEL"]
+}
