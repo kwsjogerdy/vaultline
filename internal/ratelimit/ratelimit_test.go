@@ -61,3 +61,23 @@ func TestAllow_TokensCapAtMax(t *testing.T) {
 		t.Fatal("expected rate limit after consuming all capped tokens")
 	}
 }
+
+func TestAllow_PartialRefill(t *testing.T) {
+	now := time.Unix(1000, 0)
+	clock := func() time.Time { return now }
+
+	// rate=2/s, burst=4; consume all 4 tokens
+	l := newWithClock(2, 4, clock)
+	for i := 0; i < 4; i++ {
+		l.Allow()
+	}
+
+	// advance 0.5 seconds — only 1 token should refill (floor of 2*0.5)
+	now = now.Add(500 * time.Millisecond)
+	if err := l.Allow(); err != nil {
+		t.Fatalf("expected one token after partial refill, got: %v", err)
+	}
+	if err := l.Allow(); err == nil {
+		t.Fatal("expected rate limit: only one token should have refilled")
+	}
+}
