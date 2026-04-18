@@ -1,0 +1,6 @@
+[
+  {"key": "DB_URL",      "required": true,  "pattern": "postgres"},
+  {"key": "API_KEY",     "required": true,  "pattern": ""},
+  {"key": "LOG_LEVEL",   "required": false, "pattern": ""},
+  {"key": "REDIS_URL",   "required": true,  "pattern": "redis://"}
+]
