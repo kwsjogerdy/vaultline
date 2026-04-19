@@ -1,0 +1,5 @@
+[
+  {"key": "LOG_LEVEL", "value": "info", "description": "Application log verbosity"},
+  {"key": "PORT", "value": "8080", "description": "HTTP server port"},
+  {"key": "TIMEOUT", "value": "30s", "description": "Request timeout"}
+]
