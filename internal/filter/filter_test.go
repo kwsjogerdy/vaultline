@@ -64,3 +64,11 @@ func TestApply_EmptySecrets(t *testing.T) {
 		t.Errorf("expected empty result, got %d keys", len(result))
 	}
 }
+
+func TestApply_ExcludeNonExistentKey(t *testing.T) {
+	f := filter.New(filter.Rule{Excludes: []string{"DOES_NOT_EXIST"}})
+	result := f.Apply(sampleSecrets)
+	if len(result) != len(sampleSecrets) {
+		t.Errorf("expected %d keys, got %d", len(sampleSecrets), len(result))
+	}
+}
