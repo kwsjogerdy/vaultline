@@ -85,6 +85,17 @@ func (t *Tracker) Summary() string {
 		counts[ActionRedacted], counts[ActionExpired])
 }
 
+// EntriesFor returns all audit entries recorded for the given action type.
+func (t *Tracker) EntriesFor(action Action) []Entry {
+	var result []Entry
+	for _, e := range t.report.Entries {
+		if e.Action == action {
+			result = append(result, e)
+		}
+	}
+	return result
+}
+
 // WriteJSON writes the report as JSON to the given file path.
 func (t *Tracker) WriteJSON(path string) error {
 	f, err := os.Create(path)
