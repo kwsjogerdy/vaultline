@@ -43,6 +43,22 @@ func TestOrigin_FindsSource(t *testing.T) {
 	}
 }
 
+// TestOrigin_KeyInMultipleSources verifies that Origin returns the source with
+// the highest priority when a key exists in more than one source.
+func TestOrigin_KeyInMultipleSources(t *testing.T) {
+	chain := envchain.New([]envchain.Source{
+		{Name: "local", Priority: 1, Secrets: map[string]string{"DB_HOST": "localhost"}},
+		{Name: "vault", Priority: 10, Secrets: map[string]string{"DB_HOST": "vault-host"}},
+	})
+	name, err := chain.Origin("DB_HOST")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if name != "vault" {
+		t.Errorf("expected vault (highest priority), got %s", name)
+	}
+}
+
 func TestOrigin_NotFound(t *testing.T) {
 	chain := envchain.New([]envchain.Source{})
 	_, err := chain.Origin("MISSING")
