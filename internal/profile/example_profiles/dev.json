@@ -2,6 +2,11 @@
   "name": "dev",
   "vault_path": "secret/data/dev",
   "output_file": ".env.dev",
-  "keys": [],
-  "exclude": ["DEBUG", "LOG_LEVEL"]
+  "keys": [
+    "DATABASE_URL",
+    "API_KEY",
+    "REDIS_URL"
+  ],
+  "exclude": ["DEBUG", "LOG_LEVEL"],
+  "description": "Development environment profile. Pulls secrets from Vault dev path."
 }
