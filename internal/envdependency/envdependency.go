@@ -1,86 +1,95 @@
-// Package envdependency resolves and validates declared dependencies
-// between secret keys, ensuring that if a key is present its required
-// peer keys are also present in the secret map.
+// Package envdependency resolves ordered secret loading based on declared dependencies.
 package envdependency
 
 import (
+	"errors"
 	"fmt"
-	"sort"
-	"strings"
 )
 
-// Rule declares that when Key is present, all keys listed in Requires
-// must also be present in the secret map.
+// Rule declares that Key requires all Deps to be present.
 type Rule struct {
-	Key      string   `json:"key"`
-	Requires []string `json:"requires"`
+	Key  string
+	Deps []string
 }
 
-// Violation describes a single unmet dependency.
-type Violation struct {
-	Key     string // the key that triggered the rule
-	Missing string // the required key that was absent
-}
-
-func (v Violation) String() string {
-	return fmt.Sprintf("%s requires %s (missing)", v.Key, v.Missing)
-}
-
-// Result holds the outcome of a dependency check.
+// Result holds the outcome of a dependency check for a single key.
 type Result struct {
-	Violations []Violation
+	Key     string
+	Missing []string
+	Satisfied bool
 }
 
-// OK returns true when no violations were found.
-func (r Result) OK() bool { return len(r.Violations) == 0 }
-
-// Summary returns a human-readable multi-line summary.
-func (r Result) Summary() string {
-	if r.OK() {
-		return "all dependencies satisfied"
-	}
-	lines := make([]string, 0, len(r.Violations))
-	for _, v := range r.Violations {
-		lines = append(lines, "  "+v.String())
-	}
-	sort.Strings(lines)
-	return fmt.Sprintf("%d dependency violation(s):\n%s", len(r.Violations), strings.Join(lines, "\n"))
-}
-
-// Checker validates dependency rules against a secret map.
-type Checker struct {
+// Resolver checks secrets against declared dependency rules.
+type Resolver struct {
 	rules []Rule
 }
 
-// New creates a Checker with the provided rules.
-// Rules with an empty Key or no Requires entries are silently skipped.
-func New(rules []Rule) *Checker {
-	filtered := make([]Rule, 0, len(rules))
+// New creates a Resolver with the given rules.
+func New(rules []Rule) (*Resolver, error) {
 	for _, r := range rules {
-		if r.Key == "" || len(r.Requires) == 0 {
-			continue
+		if r.Key == "" {
+			return nil, errors.New("envdependency: rule key must not be empty")
 		}
-		filtered = append(filtered, r)
 	}
-	return &Checker{rules: filtered}
+	return &Resolver{rules: rules}, nil
 }
 
-// Check evaluates all rules against secrets and returns a Result.
-// Only rules whose Key exists in secrets are evaluated.
-func (c *Checker) Check(secrets map[string]string) Result {
-	var violations []Violation
-	for _, rule := range c.rules {
-		if _, present := secrets[rule.Key]; !present {
-			continue
-		}
-		for _, req := range rule.Requires {
-			if _, ok := secrets[req]; !ok {
-				violations = append(violations, Violation{
-					Key:     rule.Key,
-					Missing: req,
-				})
+// Check evaluates all rules against the provided secrets map.
+// It returns one Result per rule.
+func (r *Resolver) Check(secrets map[string]string) []Result {
+	results := make([]Result, 0, len(r.rules))
+	for _, rule := range r.rules {
+		res := Result{Key: rule.Key}
+		for _, dep := range rule.Deps {
+			if _, ok := secrets[dep]; !ok {
+				res.Missing = append(res.Missing, dep)
 			}
 		}
+		res.Satisfied = len(res.Missing) == 0
+		results = append(results, res)
 	}
-	return Result{Violations: violations}
+	return results
+}
+
+// Order returns keys in dependency-resolved order using a topological sort.
+// Returns an error if a cycle is detected.
+func Order(rules []Rule) ([]string, error) {
+	graph := make(map[string][]string)
+	nodes := make(map[string]struct{})
+	for _, r := range rules {
+		graph[r.Key] = r.Deps
+		nodes[r.Key] = struct{}{}
+		for _, d := range r.Deps {
+			nodes[d] = struct{}{}
+		}
+	}
+
+	visited := make(map[string]int) // 0=unvisited,1=visiting,2=done
+	var order []string
+
+	var visit func(n string) error
+	visit = func(n string) error {
+		switch visited[n] {
+		case 2:
+			return nil
+		case 1:
+			return fmt.Errorf("envdependency: cycle detected at %q", n)
+		}
+		visited[n] = 1
+		for _, dep := range graph[n] {
+			if err := visit(dep); err != nil {
+				return err
+			}
+		}
+		visited[n] = 2
+		order = append(order, n)
+		return nil
+	}
+
+	for n := range nodes {
+		if err := visit(n); err != nil {
+			return nil, err
+		}
+	}
+	return order, nil
 }
