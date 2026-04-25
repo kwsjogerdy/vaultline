@@ -53,6 +53,22 @@ func (c *Converter) Apply(secrets map[string]string) ([]Result, map[string]strin
 	return results, out
 }
 
+// Format returns the format string associated with this Converter.
+func (c *Converter) Format() Format {
+	return c.format
+}
+
+// SupportedFormats returns a slice of all valid format values.
+func SupportedFormats() []Format {
+	return []Format{
+		FormatBase64,
+		FormatURLEncode,
+		FormatUppercase,
+		FormatLowercase,
+		FormatTrimSpace,
+	}
+}
+
 func (c *Converter) convert(v string) string {
 	switch c.format {
 	case FormatBase64:
